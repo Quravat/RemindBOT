@@ -12,6 +12,7 @@ const client = new Client({
 });
 
 const remindersFile = path.join(__dirname, 'reminders.json');
+const cooldownMap = new Map();
 
 function loadReminders() {
   try {
@@ -44,6 +45,17 @@ client.once('ready', () => {
 
 client.on('messageCreate', async (message) => {
   if (message.content.startsWith('!remindme') && !message.author.bot) {
+    const now = Date.now();
+    if (cooldownMap.has(message.author.id)) {
+      const expirationTime = cooldownMap.get(message.author.id);
+      if (now < expirationTime) {
+        const timeLeft = Math.ceil((expirationTime - now) / 1000);
+        return message.reply(`Veuillez patienter encore ${timeLeft} secondes avant de réutiliser cette commande.`);
+      }
+    }
+
+    cooldownMap.set(message.author.id, now + 5000);
+
     const args = message.content.split(' ').slice(1);
     if (args.length < 2) {
       return message.reply('Veuillez utiliser la commande au format : !remindme <durée> <message>.');
